@@ -1,0 +1,688 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ESG Top 10 Portfolio Dashboard (2013–2022) | Oil &amp; Gas &amp; Metal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["ui-sans-serif", "system-ui", "-apple-system", "Segoe UI", "Roboto", "Helvetica", "Arial", "Apple Color Emoji", "Segoe UI Emoji"],
+            },
+            colors: {
+              ink: {
+                900: "#050712",
+                850: "#070A17",
+                800: "#0B1024",
+                700: "#141B33",
+                600: "#1D2546",
+              },
+            },
+            boxShadow: {
+              glow: "0 0 0 1px rgba(148,163,184,.12), 0 12px 40px rgba(2,6,23,.5)",
+            },
+          },
+        },
+      };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+  </head>
+  <body class="min-h-screen bg-gradient-to-br from-ink-900 via-ink-850 to-ink-800 text-slate-100 antialiased">
+    <div class="mx-auto max-w-7xl px-4 py-8">
+      <header class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div class="space-y-1">
+          <div class="inline-flex items-center gap-2 rounded-full border border-slate-700/60 bg-white/5 px-3 py-1 text-xs text-slate-200">
+            <span class="h-2 w-2 rounded-full bg-emerald-400"></span>
+            Oil &amp; Gas &amp; Metal | Top 10 High ESG | Market-cap weighted
+          </div>
+          <h1 class="text-2xl font-semibold tracking-tight md:text-3xl">
+            ESG Portfolio Performance Dashboard
+            <span class="text-slate-400">2013–2022</span>
+          </h1>
+          <p class="text-sm text-slate-300">
+            10-year overview + year switch interaction: returns, weights, Top 10 constituents, risk &amp; statistical significance (t-stat).
+          </p>
+        </div>
+
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+          <div class="text-xs text-slate-400">Select year</div>
+          <div class="flex items-center gap-2">
+            <select
+              id="yearSelect"
+              class="w-44 rounded-xl border border-slate-700/60 bg-ink-700/40 px-3 py-2 text-sm text-slate-100 shadow-glow outline-none ring-0 focus:border-cyan-400/60"
+            ></select>
+            <button
+              id="btnPrev"
+              class="rounded-xl border border-slate-700/60 bg-white/5 px-3 py-2 text-sm text-slate-100 hover:bg-white/10 active:scale-[0.99]"
+              type="button"
+            >
+              Prev
+            </button>
+            <button
+              id="btnNext"
+              class="rounded-xl border border-slate-700/60 bg-white/5 px-3 py-2 text-sm text-slate-100 hover:bg-white/10 active:scale-[0.99]"
+              type="button"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main class="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-12 lg:items-stretch">
+        <!-- Row 1: 10-year overview + risk -->
+        <section class="lg:col-span-8 rounded-2xl border border-slate-700/60 bg-white/5 p-5 shadow-glow">
+          <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div>
+              <div class="text-sm font-medium text-slate-200">10-year overview (annual return comparison)</div>
+              <div class="text-xs text-slate-400">Compare: ESG portfolio vs market vs Oil &amp; Gas &amp; Metal industry</div>
+            </div>
+            <div class="flex flex-col gap-3 text-xs sm:flex-row sm:items-center sm:justify-end">
+              <div class="flex flex-wrap gap-2">
+                <span class="inline-flex items-center gap-2 rounded-full border border-slate-700/60 bg-ink-700/30 px-3 py-1">
+                  <span class="h-2 w-2 rounded-full bg-cyan-400"></span> ESG Portfolio (annual)
+                </span>
+                <span class="inline-flex items-center gap-2 rounded-full border border-slate-700/60 bg-ink-700/30 px-3 py-1">
+                  <span class="h-2 w-2 rounded-full bg-violet-300"></span> Market (annual)
+                </span>
+                <span class="inline-flex items-center gap-2 rounded-full border border-slate-700/60 bg-ink-700/30 px-3 py-1">
+                  <span class="h-2 w-2 rounded-full bg-orange-300"></span> Industry (annual)
+                </span>
+              </div>
+              <div class="flex items-center gap-2">
+                <button
+                  id="btnOverviewBar"
+                  type="button"
+                  class="rounded-xl border border-slate-700/60 bg-white/5 px-3 py-2 text-xs text-slate-100 hover:bg-white/10 active:scale-[0.99]"
+                >
+                  Bar
+                </button>
+                <button
+                  id="btnOverviewLine"
+                  type="button"
+                  class="rounded-xl border border-slate-700/60 bg-white/5 px-3 py-2 text-xs text-slate-100 hover:bg-white/10 active:scale-[0.99]"
+                >
+                  Line
+                </button>
+              </div>
+            </div>
+          </div>
+          <div id="chartCumulative" class="mt-3 h-[320px] w-full"></div>
+        </section>
+
+        <aside class="lg:col-span-4 flex flex-col">
+          <div class="rounded-2xl border border-slate-700/60 bg-white/5 p-5 shadow-glow">
+            <div class="text-sm font-medium text-slate-200">Risk &amp; statistics</div>
+            <div class="mt-1 text-xs text-slate-400">Rule-of-thumb: \(|t| \\ge 2\) indicates significance (visual guide only)</div>
+            <div class="mt-3 grid grid-cols-1 gap-3">
+              <div class="rounded-xl border border-slate-700/60 bg-ink-700/20 p-3">
+                <div class="flex items-center justify-between">
+                  <div class="text-xs text-slate-400">t-stat (significance gauge)</div>
+                  <div id="txtTStat" class="text-sm font-semibold"></div>
+                </div>
+                <div id="gaugeT" class="mt-2 h-[170px] w-full"></div>
+              </div>
+              <div class="rounded-xl border border-slate-700/60 bg-ink-700/20 p-3">
+                <div class="flex items-center justify-between">
+                  <div class="text-xs text-slate-400">Dispersion of Top 10 stock returns (weighted stdev)</div>
+                  <div id="txtWStd" class="text-sm font-semibold"></div>
+                </div>
+                <div id="gaugeVol" class="mt-2 h-[170px] w-full"></div>
+              </div>
+            </div>
+
+            <div class="mt-3 grid grid-cols-2 gap-3 text-xs">
+              <div class="rounded-xl border border-slate-700/60 bg-ink-700/20 p-3">
+                <div class="text-slate-400">Excess return (annual)</div>
+                <div id="kpiAbnormal" class="mt-1 text-lg font-semibold"></div>
+              </div>
+              <div class="rounded-xl border border-slate-700/60 bg-ink-700/20 p-3">
+                <div class="text-slate-400">Weighted ESG (Top 10)</div>
+                <div id="kpiESG" class="mt-1 text-lg font-semibold"></div>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <!-- Row 2: KPIs (aligned) -->
+        <section class="lg:col-span-8">
+          <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div class="rounded-2xl border border-slate-700/60 bg-white/5 p-5 shadow-glow">
+              <div class="text-xs text-slate-400">Avg annual return (10Y)</div>
+              <div id="kpiAvgReturn" class="mt-2 text-2xl font-semibold"></div>
+              <div class="mt-1 text-xs text-slate-400">ESG Portfolio (from Summary annual returns)</div>
+            </div>
+            <div class="rounded-2xl border border-slate-700/60 bg-white/5 p-5 shadow-glow">
+              <div class="text-xs text-slate-400">Avg Sharpe ratio (10Y)</div>
+              <div id="kpiAvgSharpe" class="mt-2 text-2xl font-semibold"></div>
+              <div class="mt-1 text-xs text-slate-400">Higher implies better risk-adjusted performance</div>
+            </div>
+            <div class="rounded-2xl border border-slate-700/60 bg-white/5 p-5 shadow-glow">
+              <div class="text-xs text-slate-400">Total cumulative return (10Y)</div>
+              <div id="kpiTotalCum" class="mt-2 text-2xl font-semibold"></div>
+              <div class="mt-1 text-xs text-slate-400">Compounded (2013 → 2022)</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="lg:col-span-4 hidden lg:block"></section>
+
+        <!-- Row 3: selected-year charts + table (aligned) -->
+        <section class="lg:col-span-8">
+          <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div class="rounded-2xl border border-slate-700/60 bg-white/5 p-5 shadow-glow">
+              <div class="flex items-end justify-between">
+                <div>
+                  <div class="text-sm font-medium text-slate-200">Selected-year return comparison</div>
+                  <div class="text-xs text-slate-400">ESG portfolio vs industry benchmark (annual)</div>
+                </div>
+                <div id="yearBadge" class="rounded-full border border-slate-700/60 bg-ink-700/30 px-3 py-1 text-xs text-slate-200"></div>
+              </div>
+              <div id="chartYearReturn" class="mt-2 h-[260px] w-full"></div>
+            </div>
+            <div class="rounded-2xl border border-slate-700/60 bg-white/5 p-5 shadow-glow">
+              <div class="text-sm font-medium text-slate-200">Weight distribution (Top 10)</div>
+              <div class="text-xs text-slate-400">Market-cap weighted (auto-normalized if weights do not sum to 1)</div>
+              <div id="chartWeights" class="mt-2 h-[260px] w-full"></div>
+            </div>
+          </div>
+        </section>
+
+        <aside class="lg:col-span-4 flex flex-col gap-4">
+
+          <div class="rounded-2xl border border-slate-700/60 bg-white/5 p-5 shadow-glow">
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="text-sm font-medium text-slate-200">Top 10 constituents (selected year)</div>
+                <div class="text-xs text-slate-400">Ticker | weight | ESG | stock annual return</div>
+              </div>
+              <div id="txtTopCount" class="text-xs text-slate-400"></div>
+            </div>
+
+            <div class="mt-3 overflow-hidden rounded-xl border border-slate-700/60">
+              <div class="max-h-[430px] overflow-auto">
+                <table class="w-full text-left text-xs">
+                  <thead class="sticky top-0 bg-ink-800/90 backdrop-blur">
+                    <tr class="text-slate-300">
+                      <th class="px-3 py-2 font-medium">#</th>
+                      <th class="px-3 py-2 font-medium">Ticker</th>
+                      <th class="px-3 py-2 font-medium">Company</th>
+                      <th class="px-3 py-2 font-medium text-right">Weight</th>
+                      <th class="px-3 py-2 font-medium text-right">ESG</th>
+                      <th class="px-3 py-2 font-medium text-right">Stock Return</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tblTop10" class="divide-y divide-slate-700/60 bg-ink-700/10"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div class="rounded-2xl border border-slate-700/60 bg-white/5 p-5 text-xs text-slate-400 shadow-glow">
+            Data source: `ESG_Top10_Portfolio_Performance YU Xuan.xlsx` (Summary + yearly sheets). All data is embedded for a single-file preview (charts use CDN).
+          </div>
+        </aside>
+      </main>
+    </div>
+
+    <script>
+      // ====== Embedded data (parsed from xlsx) ======
+      const DATA = {"years":[2013,2014,2015,2016,2017,2018,2019,2020,2021,2022],"byYear":{"2013":{"label":"2013-2014","portfolio_return":0.230744675299036,"market_return":0.193941552712278,"abnormal_return":0.0368031225867573,"sharpe":1.43586205102839,"t_stat":1.45989656878382,"esg_perf":0.790656944138273,"weighted_esg_top10":0.7906569441382727,"weighted_std_top10":0.27854008587354645,"top10":[{"firm":"GOLDCORP INC NEW","ticker":"GG","esg":0.843510337645518,"mktcap":20080.7596282959,"weight":0.0825593364442115,"stock_return":-0.177718590437117},{"firm":"NEWMONT MINING CORP","ticker":"NEM","esg":0.836503615847937,"mktcap":14744.9544256096,"weight":0.0606218925883221,"stock_return":-0.308132172171489},{"firm":"CAMECO CORP","ticker":"CCJ","esg":0.821913419772227,"mktcap":8168.90195966721,"weight":0.0335853392875445,"stock_return":-0.0599461496028111},{"firm":"FREEPORT MCMORAN COPPER & GOLD","ticker":"FCX","esg":0.817139513060383,"mktcap":28659.1806335449,"weight":0.117828358086922,"stock_return":0.180468389464501},{"firm":"CONOCOPHILLIPS","ticker":"COP","esg":0.81312188463327,"mktcap":73970.9905,"weight":0.304121756589112,"stock_return":0.354874419696366},{"firm":"BAKER HUGHES INC","ticker":"BHI","esg":0.775541112629156,"mktcap":20381.4799819222,"weight":0.0837957076428225,"stock_return":0.567047752619353},{"firm":"IAMGOLD CORP","ticker":"IAG","esg":0.772530618340841,"mktcap":1630.52209127045,"weight":0.00670367179353265,"stock_return":-0.408409048754813},{"firm":"HALLIBURTON CO","ticker":"HAL","esg":0.751923781020474,"mktcap":38884.6682177429,"weight":0.159869071954157,"stock_return":0.561784845047352},{"firm":"TECK RESOURCES LTD","ticker":"TCK","esg":0.737122428339482,"mktcap":12195.8594789505,"weight":0.0501416323180423,"stock_return":-0.132937888409869},{"firm":"MARATHON OIL CORP","ticker":"MRO","esg":0.712457710281766,"mktcap":24510.8931578827,"weight":0.100773233295333,"stock_return":0.0892689323111211}]},"2014":{"label":"2014-2015","portfolio_return":-0.222118515326283,"market_return":0.0988359500271581,"abnormal_return":-0.320954465353441,"sharpe":-0.856125508589156,"t_stat":-0.846339994467957,"esg_perf":0.725962034756973,"weighted_esg_top10":0.7259620347569733,"weighted_std_top10":0.088214369940358,"top10":[{"firm":"BAKER HUGHES INC","ticker":"BHI","esg":0.842231124766321,"mktcap":32458.4863195038,"weight":0.0729120919006806,"stock_return":-0.0782741325837577},{"firm":"CONOCOPHILLIPS","ticker":"COP","esg":0.810859972873176,"mktcap":105251.153771324,"weight":0.236427593107329,"stock_return":-0.169723777645558},{"firm":"FREEPORT MCMORAN COPPER & GOLD","ticker":"FCX","esg":0.787912230560818,"mktcap":37913.061,"weight":0.0851648028394679,"stock_return":-0.399456786154656},{"firm":"CAMECO CORP","ticker":"CCJ","esg":0.771145516348341,"mktcap":7760.85384155273,"weight":0.0174333480296346,"stock_return":-0.234755386847801},{"firm":"TECK RESOURCES LTD","ticker":"TCK","esg":0.740179005592494,"mktcap":12939.2677367592,"weight":0.02906571394191,"stock_return":-0.453523876324169},{"firm":"HALLIBURTON CO","ticker":"HAL","esg":0.716113705664811,"mktcap":59969.3670040894,"weight":0.134710286708609,"stock_return":-0.288468102075825},{"firm":"OCCIDENTAL PETROLEUM CORP","ticker":"OXY","esg":0.715543095493422,"mktcap":80627.5626622467,"weight":0.181115169718348,"stock_return":-0.159141588715188},{"firm":"HESS CORP","ticker":"HES","esg":0.707429715499206,"mktcap":31072.0289282227,"weight":0.0697976672865937,"stock_return":-0.251360321002443},{"firm":"MARATHON OIL CORP","ticker":"MRO","esg":0.655509733196573,"mktcap":26989.0325220642,"weight":0.0606259577291737,"stock_return":-0.237668724826423},{"firm":"CANADIAN NATURAL RESOURCES LTD","ticker":"CNQ","esg":0.493157580706619,"mktcap":50192.0714431801,"weight":0.112747368738254,"stock_return":-0.224873891627484}]},"2015":{"label":"2015-2016","portfolio_return":-0.179002611107608,"market_return":-0.0162660254630797,"abnormal_return":-0.162736585644528,"sharpe":-0.43173817698051,"t_stat":-0.426786148261431,"esg_perf":0.690579584402692,"weighted_esg_top10":0.6905795844026922,"weighted_std_top10":0.1356659399912803,"top10":[{"firm":"NEWMONT MINING CORP","ticker":"NEM","esg":0.828210230876649,"mktcap":12358.514882904,"weight":0.0398490515518854,"stock_return":0.195702019115348},{"firm":"BAKER HUGHES INC","ticker":"BHI","esg":0.812595504243813,"mktcap":26819.5095316315,"weight":0.0864773824402381,"stock_return":-0.268092208586484},{"firm":"CONOCOPHILLIPS","ticker":"COP","esg":0.787081471543145,"mktcap":75715.2750818672,"weight":0.244137902376627,"stock_return":-0.283259276102722},{"firm":"CAMECO CORP","ticker":"CCJ","esg":0.7559504804981,"mktcap":5651.92393431187,"weight":0.0182241806851152,"stock_return":-0.205713400263995},{"firm":"HESS CORP","ticker":"HES","esg":0.747380103971338,"mktcap":19220.1073706818,"weight":0.0619737125944294,"stock_return":-0.0957535307604395},{"firm":"TECK RESOURCES LTD","ticker":"TCK","esg":0.705481096136599,"mktcap":5616.98791351318,"weight":0.018111532255509,"stock_return":-0.154499595599086},{"firm":"HALLIBURTON CO","ticker":"HAL","esg":0.683946463295939,"mktcap":36647.1429203339,"weight":0.118165807242896,"stock_return":-0.0485217854699748},{"firm":"MARATHON OIL CORP","ticker":"MRO","esg":0.672599702219649,"mktcap":17913.2797779388,"weight":0.0577599506168733,"stock_return":-0.507231519576132},{"firm":"SCHLUMBERGER LTD","ticker":"SLB","esg":0.570653933898941,"mktcap":109437.773229919,"weight":0.35287342439465,"stock_return":-0.131936779975458},{"firm":"NEVSUN RESOURCES LTD","ticker":"NSU","esg":0.510816305388866,"mktcap":752.710656191826,"weight":0.00242705584177711,"stock_return":-0.162032449801073}]},"2016":{"label":"2016-2017","portfolio_return":-0.0247300418897022,"market_return":0.171490325995757,"abnormal_return":-0.196220367885459,"sharpe":-0.181521822364867,"t_stat":-0.121689568758893,"esg_perf":0.54332301632727,"weighted_esg_top10":0.5433230163272701,"weighted_std_top10":0.16415428551036612,"top10":[{"firm":"NEWMONT MINING CORP","ticker":"NEM","esg":0.800364864311494,"mktcap":20754.3721533318,"weight":0.116780200294977,"stock_return":0.0581825822989916},{"firm":"CAMECO CORP","ticker":"CCJ","esg":0.754467911152818,"mktcap":4341.84931568813,"weight":0.0244306129325752,"stock_return":-0.183477481899716},{"firm":"SCHLUMBERGER LTD","ticker":"SLB","esg":0.555030563884388,"mktcap":109953.78350592,"weight":0.618685295134331,"stock_return":-0.0642565701251433},{"firm":"NEVSUN RESOURCES LTD","ticker":"NSU","esg":0.542944766975953,"mktcap":881.147417149544,"weight":0.00495801901902418,"stock_return":-0.245052270938615},{"firm":"SOUTHERN COPPER CORP","ticker":"SCCO","esg":0.438592911391651,"mktcap":20874.614505825,"weight":0.117456777061759,"stock_return":0.354252568751579},{"firm":"DYNEGY INC NEW DEL","ticker":"DYN","esg":0.387340573846371,"mktcap":2021.88993315697,"weight":0.0113767214745912,"stock_return":-0.561040318341486},{"firm":"OCEANEERING INTERNATIONAL INC","ticker":"OII","esg":0.372911558675486,"mktcap":2928.07165985107,"weight":0.0164756029423207,"stock_return":-0.242250493391363},{"firm":"ANTERO RESOURCES CORP","ticker":"AR","esg":0.273065370040043,"mktcap":7902.02470076752,"weight":0.0444629218592547,"stock_return":-0.29142269420214},{"firm":"HELMERICH & PAYNE INC","ticker":"HP","esg":0.246961196752063,"mktcap":7252.65777326202,"weight":0.0408090797049955,"stock_return":-0.0999996814277045},{"firm":"ATWOOD OCEANICS INC","ticker":"ATW","esg":0.231576456963754,"mktcap":811.258469661713,"weight":0.00456476957617251,"stock_return":-0.059044043123328}]},"2017":{"label":"2017-2018","portfolio_return":0.186041060635055,"market_return":0.142968534430544,"abnormal_return":0.0430725262045115,"sharpe":1.04176330903579,"t_stat":1.07687791317207,"esg_perf":0.64380342318358,"weighted_esg_top10":0.64380342318358,"weighted_std_top10":0.31326844471839715,"top10":[{"firm":"GOLDCORP INC NEW","ticker":"GG","esg":0.822242103421411,"mktcap":11050.9598693848,"weight":0.143372779886407,"stock_return":0.0601644044760588},{"firm":"BARRICK GOLD CORP","ticker":"ABX","esg":0.785056102487146,"mktcap":18551.0598220825,"weight":0.240677465846147,"stock_return":-0.195560284709801},{"firm":"TECK RESOURCES LTD","ticker":"TECK","esg":0.724948086891525,"mktcap":9876.36695652008,"weight":0.128133863706933,"stock_return":0.553601148591298},{"firm":"TAHOE RESOURCES INC","ticker":"TAHO","esg":0.680931347907525,"mktcap":2692.03458425999,"weight":0.0349258785171201,"stock_return":-0.404366007980418},{"firm":"ENDEAVOUR SILVER CORP","ticker":"EXK","esg":0.564094345585045,"mktcap":387.679393939018,"weight":0.00502966919350589,"stock_return":-0.0343643008965406},{"firm":"IAMGOLD CORP","ticker":"IAG","esg":0.542400843787894,"mktcap":2397.85192909241,"weight":0.0311092159317651,"stock_return":0.395973147527896},{"firm":"ENERPLUS CORP","ticker":"ERF","esg":0.529832271252403,"mktcap":1966.08745229054,"weight":0.0255075963415267,"stock_return":0.562251977782446},{"firm":"COEUR MINING INC","ticker":"CDE","esg":0.524325652576209,"mktcap":1556.83240615654,"weight":0.0201980092703326,"stock_return":-0.131465445871193},{"firm":"NEW GOLD INC","ticker":"NGD","esg":0.507005724138136,"mktcap":1830.09003841877,"weight":0.0237431951026646,"stock_return":-0.20761249197},{"firm":"SOUTHERN COPPER CORP","ticker":"SCCO","esg":0.473491093018681,"mktcap":26769.5449056702,"weight":0.347302326203598,"stock_return":0.428351046929252}]},"2018":{"label":"2018-2019","portfolio_return":-0.308029270574076,"market_return":0.0172300475204143,"abnormal_return":-0.325259318094491,"sharpe":-1.37587097812127,"t_stat":-1.29934970572179,"esg_perf":0.687068349789481,"weighted_esg_top10":0.6870683497894811,"weighted_std_top10":0.12617417693193786,"top10":[{"firm":"FREEPORT MCMORAN INC","ticker":"FCX","esg":0.838856431172324,"mktcap":25006.1847716026,"weight":0.126124195620966,"stock_return":-0.416382267693829},{"firm":"TECK RESOURCES LTD","ticker":"TECK","esg":0.817735178622236,"mktcap":14402.1554317474,"weight":0.0726404401802257,"stock_return":-0.245038396435586},{"firm":"BARRICK GOLD CORP","ticker":"ABX","esg":0.801171569421556,"mktcap":15322.7101335525,"weight":0.0772834603910544,"stock_return":-0.0454867492235332},{"firm":"OCCIDENTAL PETROLEUM CORP","ticker":"OXY","esg":0.673490443096483,"mktcap":64079.6338336945,"weight":0.323199734256895,"stock_return":-0.382967651929332},{"firm":"DEVON ENERGY CORP NEW","ticker":"DVN","esg":0.618963628524157,"mktcap":23008.663520813,"weight":0.116049257628917,"stock_return":-0.388737941636913},{"firm":"CANADIAN NATURAL RESOURCES LTD","ticker":"CNQ","esg":0.607514602131828,"mktcap":44311.8864150925,"weight":0.223496750167898,"stock_return":-0.190867407582261},{"firm":"IAMGOLD CORP","ticker":"IAG","esg":0.597073997075099,"mktcap":2710.36497330666,"weight":0.0136703221710873,"stock_return":-0.597756396249996},{"firm":"B2GOLD CORP","ticker":"BTG","esg":0.558579863479512,"mktcap":2536.74880498505,"weight":0.0127946508211249,"stock_return":-0.00732599067667949},{"firm":"COEUR MINING INC","ticker":"CDE","esg":0.557351088465705,"mktcap":1414.4891822505,"weight":0.00713428745549772,"stock_return":-0.647642702847768},{"firm":"VERMILION ENERGY INC","ticker":"VET","esg":0.557296534345522,"mktcap":5473.51974487305,"weight":0.0276069013063342,"stock_return":-0.353772345647872}]},"2019":{"label":"2019-2020","portfolio_return":-0.24218670044128,"market_return":0.0968057735747769,"abnormal_return":-0.338992474016057,"sharpe":-0.278873830080596,"t_stat":-0.231508105735552,"esg_perf":0.766498629793189,"weighted_esg_top10":0.7664986297931885,"weighted_std_top10":0.4104508231989393,"top10":[{"firm":"NEWMONT GOLDCORP CORP","ticker":"NEM","esg":0.87254456833304,"mktcap":31531.2825105286,"weight":0.113735103317652,"stock_return":0.791233517742104},{"firm":"BAKER HUGHES INC NEW","ticker":"BHGE","esg":0.852060310590912,"mktcap":12682.0358278771,"weight":0.0457448140487193,"stock_return":-0.201093564947343},{"firm":"HALLIBURTON CO","ticker":"HAL","esg":0.843777579240701,"mktcap":19874.2595199623,"weight":0.0716875680242303,"stock_return":-0.419420821444591},{"firm":"FREEPORT MCMORAN INC","ticker":"FCX","esg":0.840401038031219,"mktcap":16841.871851964,"weight":0.0607495757429522,"stock_return":-0.0526629463837339},{"firm":"TECK RESOURCES LTD","ticker":"TECK","esg":0.795719776596211,"mktcap":12842.1137025833,"weight":0.0463222239150164,"stock_return":-0.527600178611029},{"firm":"OCCIDENTAL PETROLEUM CORP","ticker":"OXY","esg":0.774656437512475,"mktcap":37610.4446868896,"weight":0.135662982019773,"stock_return":-0.707219000918472},{"firm":"CAMECO CORP","ticker":"CCJ","esg":0.757475758742604,"mktcap":4246.91235881805,"weight":0.0153188509141643,"stock_return":0.0843820835950166},{"firm":"CONOCOPHILLIPS","ticker":"COP","esg":0.714986396776649,"mktcap":68940.736,"weight":0.248673098822948,"stock_return":-0.261872835668366},{"firm":"SCHLUMBERGER LTD","ticker":"SLB","esg":0.711859921708216,"mktcap":55044.7506048813,"weight":0.198549500644324,"stock_return":-0.435956443147757},{"firm":"CHENIERE ENERGY INC","ticker":"LNG","esg":0.693043813808985,"mktcap":17619.9875144348,"weight":0.0635562825502205,"stock_return":-0.298037396548474}]},"2020":{"label":"2020-2021","portfolio_return":0.205995540927303,"market_return":0.436559074109985,"abnormal_return":-0.230563533182682,"sharpe":0.827882500507375,"t_stat":0.900348948800872,"esg_perf":0.821763272288726,"weighted_esg_top10":0.8217632722887265,"weighted_std_top10":0.19439350206051567,"top10":[{"firm":"NEWMONT CORP","ticker":"NEM","esg":0.857805392942274,"mktcap":49551.5992471123,"weight":0.359440232352402,"stock_return":0.28687118371032},{"firm":"BARRICK GOLD CORP","ticker":"GOLD","esg":0.822215025513871,"mktcap":47900.2638495731,"weight":0.347461680943331,"stock_return":0.0245149488805496},{"firm":"BAKER HUGHES CO","ticker":"BKR","esg":0.818472626246982,"mktcap":10080.9888748884,"weight":0.0731260552350999,"stock_return":0.533248323115442},{"firm":"YAMANA GOLD INC","ticker":"AUY","esg":0.809239178766894,"mktcap":5195.99265630245,"weight":0.0376909895151682,"stock_return":-0.00607330740219758},{"firm":"PAN AMERICAN SILVER CORP","ticker":"PAAS","esg":0.795520258625493,"mktcap":6381.96065182495,"weight":0.0462938321751448,"stock_return":0.157282007899722},{"firm":"CAMECO CORP","ticker":"CCJ","esg":0.776193541640712,"mktcap":4056.9295,"weight":0.0294283878678708,"stock_return":0.848334368813261},{"firm":"ELDORADO GOLD CORP NEW","ticker":"EGO","esg":0.771798639311756,"mktcap":1622.35406809902,"weight":0.0117683249795285,"stock_return":0.414285802033872},{"firm":"VERMILION ENERGY INC","ticker":"VET","esg":0.750475942847749,"mktcap":698.538585974693,"weight":0.00506709925541898,"stock_return":0.549295804368785},{"firm":"FORTUNA SILVER MINES INC","ticker":"FSM","esg":0.723359132626989,"mktcap":935.475858043671,"weight":0.00678580842766392,"stock_return":0.547884211901514},{"firm":"KIRKLAND LAKE GOLD LTD","ticker":"KL","esg":0.722575765652349,"mktcap":11433.5842653465,"weight":0.0829375892483716,"stock_return":0.144399301395699}]},"2021":{"label":"2021-2022","portfolio_return":-0.0875626864937841,"market_return":-0.0525800429523048,"abnormal_return":-0.0349826435414793,"sharpe":-0.11167417523334,"t_stat":-0.116671551454535,"esg_perf":0.786856729562274,"weighted_esg_top10":0.7868567295622745,"weighted_std_top10":0.08839337092077106,"top10":[{"firm":"NEWMONT CORP","ticker":"NEM","esg":0.837033226882334,"mktcap":50777.6484157333,"weight":0.240314812113281,"stock_return":-0.0442585394079059},{"firm":"FREEPORT MCMORAN INC","ticker":"FCX","esg":0.816793881266275,"mktcap":54385.7078644867,"weight":0.257390634952136,"stock_return":-0.0744703487407891},{"firm":"ELDORADO GOLD CORP NEW","ticker":"EGO","esg":0.797135916018626,"mktcap":1808.97961532307,"weight":0.00856133771327663,"stock_return":-0.324074105719276},{"firm":"PAN AMERICAN SILVER CORP","ticker":"PAAS","esg":0.795267479050335,"mktcap":6007.72810582733,"weight":0.0284327080127687,"stock_return":-0.335319914459192},{"firm":"BARRICK GOLD CORP","ticker":"GOLD","esg":0.79078719157861,"mktcap":36776.7128227158,"weight":0.174052739894048,"stock_return":-0.116489035447288},{"firm":"B2GOLD CORP","ticker":"BTG","esg":0.781821912245337,"mktcap":4428.70533012867,"weight":0.0209596844777316,"stock_return":-0.193972201858621},{"firm":"COEUR MINING INC","ticker":"CDE","esg":0.765419396405372,"mktcap":2283.13682942391,"weight":0.0108053762887908,"stock_return":-0.625961515993601},{"firm":"YAMANA GOLD INC","ticker":"AUY","esg":0.719877031154858,"mktcap":4075.19049739122,"weight":0.0192866087591988,"stock_return":0.0500488324613544},{"firm":"SOUTHERN COPPER CORP","ticker":"SCCO","esg":0.707373034822137,"mktcap":49724.0551240768,"weight":0.235328482855666,"stock_return":-0.0541093809635686},{"firm":"FORTUNA SILVER MINES INC","ticker":"FSM","esg":0.696217986542043,"mktcap":1028.50938534641,"weight":0.00486761493310283,"stock_return":-0.529496391867014}]},"2022":{"label":"2022-2023","portfolio_return":-0.178691704626149,"market_return":0.0106031091626513,"abnormal_return":-0.1892948137888,"sharpe":-0.243158505205354,"t_stat":-0.27418976504488,"esg_perf":0.81479805832262,"weighted_esg_top10":0.8147980583226203,"weighted_std_top10":0.12536128017358752,"top10":[{"firm":"HALLIBURTON CO","ticker":"HAL","esg":0.882169586857737,"mktcap":28285.9679105225,"weight":0.112210264258692,"stock_return":-0.283827980569293},{"firm":"NEWMONT CORP","ticker":"NEM","esg":0.876550007826096,"mktcap":47357.1537167816,"weight":0.187865543435151,"stock_return":-0.370644768009182},{"firm":"TECK RESOURCES LTD","ticker":"TECK","esg":0.845261224368722,"mktcap":16254.068837738,"weight":0.0644797931373973,"stock_return":-0.0393721272952171},{"firm":"FREEPORT MCMORAN INC","ticker":"FCX","esg":0.809073016054356,"mktcap":42405.4064517098,"weight":0.168221991872284,"stock_return":-0.106429191615496},{"firm":"PAN AMERICAN SILVER CORP","ticker":"PAAS","esg":0.808290615261376,"mktcap":4139.70887605667,"weight":0.0164222001667324,"stock_return":-0.289569488185936},{"firm":"ELDORADO GOLD CORP NEW","ticker":"EGO","esg":0.793548028941919,"mktcap":1180.13073534203,"weight":0.004681571516005,"stock_return":0.174346289769842},{"firm":"SCHLUMBERGER LTD","ticker":"SLB","esg":0.773136051657036,"mktcap":50545.3629875527,"weight":0.200513150401153,"stock_return":-0.0560804091940016},{"firm":"VERMILION ENERGY INC","ticker":"VET","esg":0.772040612604586,"mktcap":3148.71191177368,"weight":0.012490921180858,"stock_return":-0.490529149063584},{"firm":"OCCIDENTAL PETROLEUM CORP","ticker":"OXY","esg":0.76763111583261,"mktcap":55181.807081028,"weight":0.218905896182215,"stock_return":-0.160346479265424},{"firm":"B2GOLD CORP","ticker":"BTG","esg":0.762527906233176,"mktcap":3581.72156083703,"weight":0.0142086678495123,"stock_return":-0.0251614194272621}]}}};
+
+      // Oil & Gas & Metal industry benchmark (annual) from `Oilgas&metal_Group 1.xlsx`
+      const INDUSTRY_BENCHMARK_ANNUAL_RETURN = {
+        2013: 0.193941552712278,
+        2014: 0.0988359500271581,
+        2015: -0.0162660254630797,
+        2016: 0.171490325995757,
+        2017: 0.142968534430544,
+        2018: 0.0172300475204143,
+        2019: 0.0968057735747769,
+        2020: 0.436559074109985,
+        2021: -0.0525800429523048,
+        2022: 0.0106031091626513,
+      };
+
+      for (const y of DATA.years) {
+        DATA.byYear[y].industry_return = INDUSTRY_BENCHMARK_ANNUAL_RETURN[y];
+      }
+
+      // ====== Utilities ======
+      const fmtPct = (x, digits = 2) => `${(x * 100).toFixed(digits)}%`;
+      const fmtNum = (x, digits = 4) => (x === null || x === undefined || Number.isNaN(x) ? "N/A" : Number(x).toFixed(digits));
+      const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+
+      function cumulativeFromAnnual(annualReturns) {
+        const out = [];
+        let v = 1;
+        for (const r of annualReturns) {
+          v *= 1 + r;
+          out.push(v - 1);
+        }
+        return out;
+      }
+
+      function avg(arr) {
+        const xs = arr.filter((v) => typeof v === "number" && !Number.isNaN(v));
+        return xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : NaN;
+      }
+
+      // ====== State ======
+      const years = DATA.years.slice();
+      let selectedYear = years[0];
+      let charts = {};
+      let overviewMode = "bar";
+
+      // ====== Renderers ======
+      function renderYearOptions() {
+        const sel = document.getElementById("yearSelect");
+        sel.innerHTML = years
+          .map((y) => {
+            const label = DATA.byYear[y].label;
+            return `<option value="${y}">${y} (${label})</option>`;
+          })
+          .join("");
+        sel.value = String(selectedYear);
+      }
+
+      function renderKPIs10Y() {
+        const pr = years.map((y) => DATA.byYear[y].portfolio_return);
+        const sharpe = years.map((y) => DATA.byYear[y].sharpe);
+        const cum = cumulativeFromAnnual(pr);
+        const total = cum[cum.length - 1];
+
+        const elAvgR = document.getElementById("kpiAvgReturn");
+        const elAvgS = document.getElementById("kpiAvgSharpe");
+        const elTotal = document.getElementById("kpiTotalCum");
+
+        const aR = avg(pr);
+        const aS = avg(sharpe);
+
+        elAvgR.textContent = fmtPct(aR);
+        elAvgR.className = `mt-2 text-2xl font-semibold ${aR >= 0 ? "text-emerald-300" : "text-rose-300"}`;
+
+        elAvgS.textContent = aS.toFixed(2);
+        elAvgS.className = `mt-2 text-2xl font-semibold ${aS >= 0 ? "text-emerald-300" : "text-rose-300"}`;
+
+        elTotal.textContent = fmtPct(total);
+        elTotal.className = `mt-2 text-2xl font-semibold ${total >= 0 ? "text-emerald-300" : "text-rose-300"}`;
+      }
+
+      function renderTop10Table(y) {
+        const tbody = document.getElementById("tblTop10");
+        const top10 = DATA.byYear[y].top10.slice();
+        top10.sort((a, b) => (b.weight ?? 0) - (a.weight ?? 0));
+        document.getElementById("txtTopCount").textContent = `${top10.length} names`;
+
+        tbody.innerHTML = top10
+          .map((r, i) => {
+            const ret = r.stock_return;
+            const retCls = typeof ret === "number" ? (ret >= 0 ? "text-emerald-300" : "text-rose-300") : "text-slate-400";
+            return `
+              <tr class="hover:bg-white/5">
+                <td class="px-3 py-2 text-slate-400">${i + 1}</td>
+                <td class="px-3 py-2 font-semibold text-cyan-300">${r.ticker || "—"}</td>
+                <td class="px-3 py-2 text-slate-200">${r.firm || "—"}</td>
+                <td class="px-3 py-2 text-right text-slate-200">${typeof r.weight === "number" ? fmtPct(r.weight) : "N/A"}</td>
+                <td class="px-3 py-2 text-right text-slate-200">${typeof r.esg === "number" ? r.esg.toFixed(3) : "N/A"}</td>
+                <td class="px-3 py-2 text-right ${retCls}">${typeof ret === "number" ? fmtPct(ret) : "N/A"}</td>
+              </tr>
+            `;
+          })
+          .join("");
+      }
+
+      function setMiniKPIs(y) {
+        const d = DATA.byYear[y];
+        const abnormal = d.abnormal_return;
+        const t = d.t_stat;
+        const esg = d.weighted_esg_top10 ?? d.esg_perf;
+        const wstd = d.weighted_std_top10;
+
+        const elAb = document.getElementById("kpiAbnormal");
+        elAb.textContent = fmtPct(abnormal);
+        elAb.className = `mt-1 text-lg font-semibold ${abnormal >= 0 ? "text-emerald-300" : "text-rose-300"}`;
+
+        const elESG = document.getElementById("kpiESG");
+        elESG.textContent = typeof esg === "number" ? esg.toFixed(3) : "N/A";
+        elESG.className = "mt-1 text-lg font-semibold text-slate-100";
+
+        document.getElementById("txtTStat").textContent = t.toFixed(2);
+        document.getElementById("txtTStat").className = `text-sm font-semibold ${Math.abs(t) >= 2 ? "text-emerald-300" : "text-amber-300"}`;
+
+        document.getElementById("txtWStd").textContent = typeof wstd === "number" ? wstd.toFixed(3) : "N/A";
+        document.getElementById("txtWStd").className = "text-sm font-semibold text-slate-100";
+
+        document.getElementById("yearBadge").textContent = `${y} (${d.label})`;
+      }
+
+      // ====== Charts ======
+      function initCharts() {
+        charts.cumulative = echarts.init(document.getElementById("chartCumulative"));
+        charts.yearReturn = echarts.init(document.getElementById("chartYearReturn"));
+        charts.weights = echarts.init(document.getElementById("chartWeights"));
+        charts.gaugeT = echarts.init(document.getElementById("gaugeT"));
+        charts.gaugeVol = echarts.init(document.getElementById("gaugeVol"));
+
+        window.addEventListener("resize", () => {
+          Object.values(charts).forEach((c) => c.resize());
+        });
+      }
+
+      function renderOverview10Y(mode = overviewMode) {
+        const labels = years.map((y) => String(y));
+        const portfolio = years.map((y) => DATA.byYear[y].portfolio_return * 100);
+        const market = years.map((y) => DATA.byYear[y].market_return * 100);
+        const industry = years.map((y) => (DATA.byYear[y].industry_return ?? NaN) * 100);
+        const isBar = mode === "bar";
+
+        const series = isBar
+          ? [
+              {
+                name: "ESG Portfolio (annual)",
+                type: "bar",
+                data: portfolio,
+                barWidth: 10,
+                itemStyle: { color: "rgba(34,211,238,.85)" },
+              },
+              {
+                name: "Market (annual)",
+                type: "bar",
+                data: market,
+                barWidth: 10,
+                itemStyle: { color: "rgba(196,181,253,.8)" },
+              },
+              {
+                name: "Industry (annual)",
+                type: "bar",
+                data: industry,
+                barWidth: 10,
+                itemStyle: { color: "rgba(253,186,116,.85)" },
+              },
+            ]
+          : [
+              {
+                name: "ESG Portfolio (annual)",
+                type: "line",
+                data: portfolio,
+                smooth: 0.2,
+                symbol: "circle",
+                symbolSize: 7,
+                lineStyle: { width: 2, color: "#22d3ee" },
+                itemStyle: { color: "#22d3ee" },
+              },
+              {
+                name: "Market (annual)",
+                type: "line",
+                data: market,
+                smooth: 0.2,
+                symbol: "circle",
+                symbolSize: 7,
+                lineStyle: { width: 2, color: "#a78bfa" },
+                itemStyle: { color: "#a78bfa" },
+              },
+              {
+                name: "Industry (annual)",
+                type: "line",
+                data: industry,
+                smooth: 0.2,
+                symbol: "circle",
+                symbolSize: 7,
+                lineStyle: { width: 2, color: "#fdba74" },
+                itemStyle: { color: "#fdba74" },
+              },
+            ];
+
+        charts.cumulative.setOption(
+          {
+          backgroundColor: "transparent",
+          grid: { left: 50, right: 18, top: 18, bottom: 34 },
+          legend: {
+            top: 0,
+            textStyle: { color: "rgba(226,232,240,.85)" },
+            itemWidth: 14,
+            itemHeight: 8,
+          },
+          tooltip: {
+            trigger: "axis",
+            axisPointer: { type: isBar ? "shadow" : "line" },
+            backgroundColor: "rgba(2,6,23,.9)",
+            borderColor: "rgba(148,163,184,.2)",
+            textStyle: { color: "#e2e8f0" },
+            valueFormatter: (v) => `${Number(v).toFixed(2)}%`,
+          },
+          xAxis: {
+            type: "category",
+            data: labels,
+            axisLine: { lineStyle: { color: "rgba(148,163,184,.25)" } },
+            axisLabel: { color: "rgba(226,232,240,.75)" },
+          },
+          yAxis: {
+            type: "value",
+            axisLabel: { color: "rgba(226,232,240,.75)", formatter: "{value}%" },
+            splitLine: { lineStyle: { color: "rgba(148,163,184,.12)" } },
+          },
+          series,
+          },
+          true
+        );
+      }
+
+      function setOverviewMode(mode) {
+        overviewMode = mode;
+        const btnBar = document.getElementById("btnOverviewBar");
+        const btnLine = document.getElementById("btnOverviewLine");
+        const base = "rounded-xl border border-slate-700/60 bg-white/5 px-3 py-2 text-xs text-slate-100 hover:bg-white/10 active:scale-[0.99]";
+        const activeBar = "rounded-xl border border-cyan-400/60 bg-cyan-400/15 px-3 py-2 text-xs text-cyan-200 hover:bg-cyan-400/20 active:scale-[0.99]";
+        const activeLine = "rounded-xl border border-violet-400/60 bg-violet-400/15 px-3 py-2 text-xs text-violet-200 hover:bg-violet-400/20 active:scale-[0.99]";
+
+        if (btnBar) btnBar.className = mode === "bar" ? activeBar : base;
+        if (btnLine) btnLine.className = mode === "line" ? activeLine : base;
+
+        renderOverview10Y(mode);
+      }
+
+      function renderYearReturnBar(y) {
+        const d = DATA.byYear[y];
+        const p = d.portfolio_return * 100;
+        const b = d.market_return * 100;
+        const excess = (d.portfolio_return - d.market_return) * 100;
+
+        charts.yearReturn.setOption({
+          backgroundColor: "transparent",
+          grid: { left: 42, right: 12, top: 18, bottom: 34 },
+          tooltip: {
+            trigger: "axis",
+            axisPointer: { type: "shadow" },
+            backgroundColor: "rgba(2,6,23,.9)",
+            borderColor: "rgba(148,163,184,.2)",
+            textStyle: { color: "#e2e8f0" },
+            valueFormatter: (v) => `${Number(v).toFixed(2)}%`,
+          },
+          xAxis: {
+            type: "category",
+            data: ["Portfolio", "Industry", "Excess"],
+            axisLine: { lineStyle: { color: "rgba(148,163,184,.25)" } },
+            axisLabel: { color: "rgba(226,232,240,.75)" },
+          },
+          yAxis: {
+            type: "value",
+            axisLabel: { color: "rgba(226,232,240,.75)", formatter: "{value}%" },
+            splitLine: { lineStyle: { color: "rgba(148,163,184,.12)" } },
+          },
+          series: [
+            {
+              type: "bar",
+              data: [
+                { value: p, itemStyle: { color: p >= 0 ? "#34d399" : "#fb7185" } },
+                { value: b, itemStyle: { color: "rgba(253,186,116,.85)" } },
+                { value: excess, itemStyle: { color: excess >= 0 ? "rgba(34,211,238,.85)" : "rgba(239,68,68,.75)" } },
+              ],
+              barWidth: 34,
+              emphasis: { focus: "series" },
+            },
+          ],
+        });
+      }
+
+      function renderWeightsPie(y) {
+        const top10 = DATA.byYear[y].top10.slice().sort((a, b) => (b.weight ?? 0) - (a.weight ?? 0));
+        const seriesData = top10.map((r) => ({
+          name: r.ticker || r.firm || "—",
+          value: typeof r.weight === "number" ? r.weight : 0,
+          firm: r.firm,
+          esg: r.esg,
+        }));
+
+        charts.weights.setOption({
+          backgroundColor: "transparent",
+          tooltip: {
+            trigger: "item",
+            backgroundColor: "rgba(2,6,23,.9)",
+            borderColor: "rgba(148,163,184,.2)",
+            textStyle: { color: "#e2e8f0" },
+            formatter: (p) => {
+              const d = p.data;
+              return [
+                `<div style=\"font-weight:600; margin-bottom:4px\">${p.name}</div>`,
+                `<div style=\"color:rgba(226,232,240,.8)\">${d.firm || ""}</div>`,
+                `<div style=\"margin-top:6px\">Weight: <b>${(p.value * 100).toFixed(2)}%</b></div>`,
+                d.esg != null ? `<div>ESG: <b>${Number(d.esg).toFixed(3)}</b></div>` : "",
+              ].join("");
+            },
+          },
+          series: [
+            {
+              type: "pie",
+              radius: ["45%", "74%"],
+              center: ["50%", "54%"],
+              label: { color: "rgba(226,232,240,.85)", formatter: "{b}" },
+              labelLine: { lineStyle: { color: "rgba(148,163,184,.25)" } },
+              itemStyle: {
+                borderColor: "rgba(2,6,23,.7)",
+                borderWidth: 2,
+              },
+              data: seriesData,
+            },
+          ],
+        });
+      }
+
+      function renderTGauge(y) {
+        const t = DATA.byYear[y].t_stat;
+        const absT = Math.abs(t);
+        const value = clamp(absT, 0, 4);
+        const status = absT >= 2 ? "Significant" : "Not significant";
+
+        charts.gaugeT.setOption({
+          backgroundColor: "transparent",
+          series: [
+            {
+              type: "gauge",
+              startAngle: 210,
+              endAngle: -30,
+              min: 0,
+              max: 4,
+              splitNumber: 4,
+              axisLine: {
+                lineStyle: {
+                  width: 14,
+                  color: [
+                    [0.5, "rgba(251,191,36,.85)"], // 0-2
+                    [1, "rgba(52,211,153,.85)"], // 2-4
+                  ],
+                },
+              },
+              pointer: { width: 4, length: "64%" },
+              axisTick: { distance: -18, length: 6, lineStyle: { color: "rgba(226,232,240,.55)" } },
+              splitLine: { distance: -18, length: 14, lineStyle: { color: "rgba(226,232,240,.75)" } },
+              axisLabel: { color: "rgba(226,232,240,.75)", distance: 18, formatter: (v) => (v === 2 ? "2" : v) },
+              title: { show: true, offsetCenter: [0, "62%"], color: "rgba(226,232,240,.75)", fontSize: 12 },
+              detail: { valueAnimation: true, formatter: () => status, color: absT >= 2 ? "#34d399" : "#fbbf24", fontSize: 14, offsetCenter: [0, "82%"] },
+              data: [{ value, name: `|t|=${absT.toFixed(2)}` }],
+            },
+          ],
+        });
+      }
+
+      function renderVolGauge(y) {
+        const wstd = DATA.byYear[y].weighted_std_top10;
+        const v = typeof wstd === "number" ? wstd : 0;
+        // We scale max using the sample max across years for a stable gauge.
+        const max = Math.max(
+          0.25,
+          ...years.map((yr) => (typeof DATA.byYear[yr].weighted_std_top10 === "number" ? DATA.byYear[yr].weighted_std_top10 : 0))
+        );
+        const value = clamp(v, 0, max);
+
+        charts.gaugeVol.setOption({
+          backgroundColor: "transparent",
+          series: [
+            {
+              type: "gauge",
+              startAngle: 210,
+              endAngle: -30,
+              min: 0,
+              max,
+              splitNumber: 4,
+              axisLine: {
+                lineStyle: {
+                  width: 14,
+                  color: [
+                    [0.45, "rgba(52,211,153,.85)"],
+                    [0.75, "rgba(34,211,238,.85)"],
+                    [1, "rgba(251,113,133,.85)"],
+                  ],
+                },
+              },
+              pointer: { width: 4, length: "64%" },
+              axisTick: { distance: -18, length: 6, lineStyle: { color: "rgba(226,232,240,.55)" } },
+              splitLine: { distance: -18, length: 14, lineStyle: { color: "rgba(226,232,240,.75)" } },
+              axisLabel: { color: "rgba(226,232,240,.75)", distance: 18, formatter: (x) => Number(x).toFixed(2) },
+              title: { show: true, offsetCenter: [0, "62%"], color: "rgba(226,232,240,.75)", fontSize: 12 },
+              detail: { valueAnimation: true, formatter: (val) => val.toFixed(3), color: "#e2e8f0", fontSize: 14, offsetCenter: [0, "82%"] },
+              data: [{ value, name: "Weighted Std" }],
+            },
+          ],
+        });
+      }
+
+      function selectYear(y) {
+        selectedYear = Number(y);
+        document.getElementById("yearSelect").value = String(selectedYear);
+        setMiniKPIs(selectedYear);
+        renderYearReturnBar(selectedYear);
+        renderWeightsPie(selectedYear);
+        renderTGauge(selectedYear);
+        renderVolGauge(selectedYear);
+        renderTop10Table(selectedYear);
+      }
+
+      // ====== Init ======
+      function init() {
+        renderYearOptions();
+        initCharts();
+        renderKPIs10Y();
+        setOverviewMode("bar");
+        selectYear(selectedYear);
+
+        document.getElementById("yearSelect").addEventListener("change", (e) => selectYear(e.target.value));
+        document.getElementById("btnOverviewBar")?.addEventListener("click", () => setOverviewMode("bar"));
+        document.getElementById("btnOverviewLine")?.addEventListener("click", () => setOverviewMode("line"));
+        document.getElementById("btnPrev").addEventListener("click", () => {
+          const idx = years.indexOf(selectedYear);
+          if (idx > 0) selectYear(years[idx - 1]);
+        });
+        document.getElementById("btnNext").addEventListener("click", () => {
+          const idx = years.indexOf(selectedYear);
+          if (idx >= 0 && idx < years.length - 1) selectYear(years[idx + 1]);
+        });
+      }
+
+      init();
+    </script>
+  </body>
+</html>
